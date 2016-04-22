@@ -5,125 +5,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/weaveworks/blackfriday"
 	"github.com/weaveworks/wordepress"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	stdpath "path"
-	"regexp"
-	"strings"
 )
 
-var AnchorRegexp = regexp.MustCompile(`<a href="([^"]*)"`)
-var ImgRegexp = regexp.MustCompile(`<img src="([^"]*)"`)
+func headImage(image *wordepress.Image) (bool, error) {
+	url := baseURL + "/wp-content/uploads/" + image.Hash + image.Extension
+	request, err := http.NewRequest("HEAD", url, nil)
 
-type PostRequest struct {
-	Parent    int    `json:"parent"`
-	MenuOrder int    `json:"menu_order"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	Status    string `json:"status"`
-	Slug      string `json:"slug"`
-	Product   string `json:"wpcf-product"`
-	Version   string `json:"wpcf-version"`
-}
-
-type Content struct {
-	Rendered string `json:"rendered"`
-}
-
-type PostResponse struct {
-	Id      int     `json:"id"`
-	Slug    string  `json:"slug"`
-	Content Content `json:"content"`
-}
-
-type Media struct {
-	MediaDetails MediaDetails `json:"media_details"`
-}
-
-type MediaDetails struct {
-	File string `json:"file"`
-}
-
-func WordepressMarkdown(input []byte) []byte {
-	htmlFlags := blackfriday.HTML_USE_XHTML
-	renderer := blackfriday.HtmlRenderer(htmlFlags, "", "")
-
-	options := blackfriday.Options{
-		Extensions: 0 |
-			blackfriday.EXTENSION_NEWLINE_TO_SPACE |
-			blackfriday.EXTENSION_FENCED_CODE,
-	}
-
-	return blackfriday.MarkdownOptions(input, renderer, options)
-}
-
-func transformBody(document wordepress.Document) string {
-	html := WordepressMarkdown(document.Body())
-
-	rewriteAnchors := func(bytes []byte) []byte {
-		// This match must succeed or we wouldn't have been invoked
-		href := string(AnchorRegexp.FindSubmatch(bytes)[1])
-
-		// TODO extract string literals to config
-		if strings.HasPrefix(href, "/site/") && strings.HasSuffix(href, ".md") {
-			trimmed := strings.TrimPrefix(href, "/site/")
-			trimmed = strings.TrimSuffix(trimmed, ".md")
-
-			// Fully qualify each slug and reassemble the path
-			var slugs []string
-			for _, slug := range strings.Split(trimmed, "/") {
-				slugs = append(slugs, fullyQualifiedSlug(slug))
-			}
-
-			return []byte(fmt.Sprintf(`<a href="/documentation/%s"`, strings.Join(slugs, "/")))
-		}
-
-		return bytes
-	}
-
-	rewriteImages := func(bytes []byte) []byte {
-		// This match must succeed or we wouldn't have been invoked
-		src := string(ImgRegexp.FindSubmatch(bytes)[1])
-
-		qualifiedName := fmt.Sprintf("%s-%s-%s", product, version, src)
-
-		if err := postAttachment(stdpath.Join(document.Dir(), src), qualifiedName); err != nil {
-			log.Printf("Error posting attachment: %v", err)
-			return bytes
-		}
-
-		return []byte(fmt.Sprintf(`<img src="/wp-content/uploads/%s"`, qualifiedName))
-	}
-
-	html = AnchorRegexp.ReplaceAllFunc(html, rewriteAnchors)
-	html = ImgRegexp.ReplaceAllFunc(html, rewriteImages)
-	return string(html)
-}
-
-func fullyQualifiedSlug(slug string) string {
-	return fmt.Sprintf("%s-%s-%s", product, version, slug)
-}
-
-func sanitiseSlug(slug string) string {
-	// WordPress does much more sanitisation than this, but the dots in the
-	// embedded version strings are the main thing we're concerned with
-	return strings.Replace(slug, ".", "-", -1)
-}
-
-func postAttachment(path, name string) error {
-	body, err := os.Open(path)
+	client := &http.Client{}
+	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return false, err
 	}
+	response.Body.Close()
 
+	if response.StatusCode != http.StatusOK {
+		return false, nil
+	}
+	return true, nil
+}
+
+func postImage(image *wordepress.Image) error {
 	url := baseURL + "/wp-json/wp/v2/media"
-	request, err := http.NewRequest("POST", url, body)
+	name := image.Hash + image.Extension
+	request, err := http.NewRequest("POST", url, bytes.NewReader(image.Content))
 	request.SetBasicAuth(user, password)
-	request.Header.Set("Content-Type", "image/png")
+	request.Header.Set("Content-Type", image.MimeType)
 	request.Header.Set("Content-Disposition", `attachment; filename="`+name+`"`)
 	request.Header.Set("Accept", "application/json")
 
@@ -145,7 +56,7 @@ func postAttachment(path, name string) error {
 		return fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
 	}
 
-	var media Media
+	var media wordepress.Media
 	err = json.Unmarshal(responseBytes, &media)
 	if err != nil {
 		return err
@@ -159,73 +70,19 @@ func postAttachment(path, name string) error {
 	return nil
 }
 
-func postDocument(parent int, document wordepress.Document) (int, error) {
-	postRequest := PostRequest{
-		Parent:    parent,
-		MenuOrder: document.MenuOrder(),
-		Slug:      fullyQualifiedSlug(document.Slug()),
-		Title:     document.Title(),
-		Content:   transformBody(document),
-		Status:    "publish",
-		Product:   product,
-		Version:   version,
+func toMap(rds []*wordepress.Document) map[string]*wordepress.Document {
+	rdm := make(map[string]*wordepress.Document)
+	for i, _ := range rds {
+		rdm[rds[i].Slug] = rds[i]
 	}
-
-	requestBytes, err := json.Marshal(postRequest)
-	if err != nil {
-		return 0, err
-	}
-
-	url := baseURL + "/wp-json/wp/v2/documentation"
-	request, err := http.NewRequest("POST", url, bytes.NewReader(requestBytes))
-	request.SetBasicAuth(user, password)
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return 0, err
-	}
-
-	responseBytes, err := ioutil.ReadAll(response.Body)
-	response.Body.Close()
-	if err != nil {
-		return 0, err
-	}
-
-	if response.StatusCode != http.StatusCreated {
-		return 0, fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
-	}
-
-	var postResponse PostResponse
-	err = json.Unmarshal(responseBytes, &postResponse)
-	if err != nil {
-		return 0, err
-	}
-
-	// Ensure server honoured our slug
-	if postResponse.Slug != sanitiseSlug(postRequest.Slug) {
-		return 0, fmt.Errorf("duplicate slug: requested %s, response %s",
-			postRequest.Slug, postResponse.Slug)
-	}
-
-	return postResponse.Id, nil
+	return rdm
 }
 
-func postDocuments(parent int, documents []wordepress.Document) error {
-	for _, document := range documents {
-		log.Printf("Uploading document: %s", document.Title())
-		id, err := postDocument(parent, document)
-		if err != nil {
-			return err
-		}
-		err = postDocuments(id, document.Children())
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func identical(local *wordepress.Document, remote *wordepress.Document) bool {
+	return local.MenuOrder == remote.MenuOrder &&
+		local.Title.Raw == remote.Title.Raw &&
+		local.Content.Raw == remote.Content.Raw &&
+		local.Parent == remote.Parent
 }
 
 var publishCmd = &cobra.Command{
@@ -233,18 +90,81 @@ var publishCmd = &cobra.Command{
 	Short: "Publish a site into WordPress",
 	Long:  `Publish a site into WordPress`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if product == "" || version == "" || user == "" || password == "" {
+		if product == "" || version == "" || user == "" || password == "" || len(args) != 1 {
 			cmd.Usage()
 			os.Exit(1)
 		}
-		for _, path := range args {
-			documents, err := wordepress.ParseSite(path)
-			if err != nil {
-				log.Fatalf("Error parsing site: %v", err)
+
+		// Load local site
+		localDocuments, images, err := wordepress.ParseSite(product, version, args[0])
+		if err != nil {
+			log.Fatalf("Error parsing site: %v", err)
+		}
+
+		// Load remote site. context=edit is required to populate the Raw field
+		// of the title and content JSON for comparison with local values
+		endpoint := fmt.Sprintf("%s/wp-json/wp/v2/documentation", baseURL)
+		query := fmt.Sprintf(
+			"context=edit&"+
+				"filter[meta_query][0][key]=wpcf-product&"+
+				"filter[meta_query][0][value]=%s&"+
+				"filter[meta_query][1][key]=wpcf-version&"+
+				"filter[meta_query][1][value]=%s", product, version)
+
+		remoteDocuments, err := wordepress.GetDocuments(user, password, endpoint, query)
+		if err != nil {
+			log.Fatalf("Unable to get JSON documents: %v", err)
+		}
+
+		// Create/update documents
+		existing := toMap(remoteDocuments)
+		for _, localDocument := range localDocuments {
+			if localDocument.LocalParent != nil {
+				// Pre-order traversal guarantees the remote document will be set
+				localDocument.Parent = localDocument.LocalParent.RemoteDocument.ID
 			}
-			err = postDocuments(0, documents)
+			if remoteDocument, ok := existing[localDocument.Slug]; ok {
+				if identical(localDocument, remoteDocument) {
+					log.Printf("Skipping document: %s", localDocument.Slug)
+				} else {
+					remoteDocument, err = wordepress.PutDocument(user, password, endpoint, remoteDocument.ID, localDocument)
+					if err != nil {
+						log.Fatalf("Error updating document: %v", err)
+					}
+				}
+				localDocument.RemoteDocument = remoteDocument
+				delete(existing, localDocument.Slug)
+			} else {
+				remoteDocument, err := wordepress.PostDocument(user, password, endpoint, localDocument)
+				if err != nil {
+					log.Fatalf("Error uploading document: %v", err)
+				}
+				localDocument.RemoteDocument = remoteDocument
+			}
+		}
+
+		// Upload new images
+		for _, image := range images {
+			exists, err := headImage(image)
 			if err != nil {
-				log.Fatalf("Error uploading documents: %v", err)
+				log.Fatalf("Error testing image existence: %v", err)
+			}
+			if exists {
+				log.Printf("Skipping image: %s%s", image.Hash, image.Extension)
+				continue
+			}
+			err = postImage(image)
+			if err != nil {
+				log.Fatalf("Error uploading image: %v", err)
+			}
+		}
+
+		// Remove remote documents which lack a local companion
+		for _, remoteDocument := range existing {
+			log.Printf("Deleting document: %s", remoteDocument.Slug)
+			err := wordepress.DeleteDocument(user, password, endpoint, remoteDocument)
+			if err != nil {
+				log.Fatalf("Error deleting document: %v", err)
 			}
 		}
 	},

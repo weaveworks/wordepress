@@ -1,17 +1,100 @@
 package wordepress
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"strconv"
 )
 
-func GetJSONDocuments(user, password, endpoint, query string) ([]DocumentJSON, error) {
-	var jsonDocuments []DocumentJSON
-	maxPage := 1
-	for page := 1; page <= maxPage; page++ {
+func PostDocument(user, password, endpoint string, document *Document) (*Document, error) {
+	requestBytes, err := json.Marshal(document)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest("POST", endpoint, bytes.NewReader(requestBytes))
+	request.SetBasicAuth(user, password)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+
+	log.Printf("Uploading document: %s", document.Slug)
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := ioutil.ReadAll(response.Body)
+	response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
+	}
+
+	var remoteDocument Document
+	err = json.Unmarshal(responseBytes, &remoteDocument)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ensure server honoured our slug
+	if remoteDocument.Slug != sanitiseSlug(document.Slug) {
+		return nil, fmt.Errorf("duplicate slug: requested %s, response %s",
+			document.Slug, remoteDocument.Slug)
+	}
+
+	return &remoteDocument, nil
+}
+
+func PutDocument(user, password, endpoint string, ID int, document *Document) (*Document, error) {
+	requestBytes, err := json.Marshal(document)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/%d", endpoint, ID)
+	request, err := http.NewRequest("PUT", url, bytes.NewReader(requestBytes))
+	request.SetBasicAuth(user, password)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
+
+	log.Printf("Updating document: %s", document.Slug)
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	responseBytes, err := ioutil.ReadAll(response.Body)
+	response.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
+	}
+
+	var remoteDocument Document
+	err = json.Unmarshal(responseBytes, &remoteDocument)
+	if err != nil {
+		return nil, err
+	}
+
+	return &remoteDocument, nil
+}
+
+func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
+	var jsonDocuments []*Document
+	for page := 1; true; page++ {
 		url := fmt.Sprintf("%s?%s&page=%d", endpoint, query, page)
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -19,6 +102,8 @@ func GetJSONDocuments(user, password, endpoint, query string) ([]DocumentJSON, e
 		}
 		request.SetBasicAuth(user, password)
 		request.Header.Set("Accept", "application/json")
+
+		log.Printf("Loading page %d from %s", page, endpoint)
 
 		client := &http.Client{}
 		response, err := client.Do(request)
@@ -36,40 +121,49 @@ func GetJSONDocuments(user, password, endpoint, query string) ([]DocumentJSON, e
 			return nil, fmt.Errorf("%v", response.Status)
 		}
 
-		maxPage, err = strconv.Atoi(response.Header.Get("X-WP-TotalPages"))
-		if err != nil {
-			return nil, err
-		}
-
-		var jsonPage []DocumentJSON
+		var jsonPage []Document
 		err = json.Unmarshal(responseBytes, &jsonPage)
 		if err != nil {
 			return nil, err
 		}
 
-		jsonDocuments = append(jsonDocuments, jsonPage...)
+		if len(jsonPage) == 0 {
+			break
+		}
+
+		for i := 0; i < len(jsonPage); i++ {
+			jsonDocuments = append(jsonDocuments, &jsonPage[i])
+		}
 	}
 	return jsonDocuments, nil
 }
 
-func DeleteJSONDocuments(user, password, endpoint string, jsonDocuments []DocumentJSON) error {
+func DeleteDocument(user, password, endpoint string, jsonDocument *Document) error {
+	url := fmt.Sprintf("%s/%d?force=true", endpoint, jsonDocument.ID)
+	request, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	request.SetBasicAuth(user, password)
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("%v", response.Status)
+	}
+	return nil
+}
+
+func DeleteDocuments(user, password, endpoint string, jsonDocuments []*Document) error {
 	for _, jsonDocument := range jsonDocuments {
-		url := fmt.Sprintf("%s/%d?force=true", endpoint, jsonDocument.Id)
-		request, err := http.NewRequest("DELETE", url, nil)
+		err := DeleteDocument(user, password, endpoint, jsonDocument)
 		if err != nil {
 			return err
-		}
-		request.SetBasicAuth(user, password)
-
-		client := &http.Client{}
-		response, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-		response.Body.Close()
-
-		if response.StatusCode != http.StatusOK {
-			return fmt.Errorf("%v", response.Status)
 		}
 	}
 	return nil

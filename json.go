@@ -1,6 +1,17 @@
 package wordepress
 
-type commonDocumentJSON struct {
+type Text struct {
+	Rendered string `json:"rendered"`
+	Raw      string `json:"raw"`
+}
+
+type Document struct {
+	LocalParent    *Document `json:"-"`
+	RemoteDocument *Document `json:"-"`
+
+	ID        int    `json:"id,omitempty"`
+	Title     Text   `json:"title"`
+	Content   Text   `json:"content"`
 	Parent    int    `json:"parent"`
 	MenuOrder int    `json:"menu_order"`
 	Slug      string `json:"slug"`
@@ -9,29 +20,10 @@ type commonDocumentJSON struct {
 	Status    string `json:"status"`
 }
 
-// POST request body
-type DocumentRequestJSON struct {
-	commonDocumentJSON
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
-
-type RenderedJSON struct {
-	Rendered string `json:"rendered"`
-}
-
-// POST and GET response body
-type DocumentJSON struct {
-	commonDocumentJSON
-	Id      int          `json:"id"`
-	Title   RenderedJSON `json:"title"`
-	Content RenderedJSON `json:"content"`
-}
-
-type MediaDetailsJSON struct {
+type MediaDetails struct {
 	File string `json:"file"`
 }
 
-type MediaJSON struct {
-	MediaDetails MediaDetailsJSON `json:"media_details"`
+type Media struct {
+	MediaDetails MediaDetails `json:"media_details"`
 }

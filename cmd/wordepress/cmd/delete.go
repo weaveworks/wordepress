@@ -19,16 +19,20 @@ var deleteCmd = &cobra.Command{
 		}
 
 		endpoint := fmt.Sprintf("%s/wp-json/wp/v2/documentation", baseURL)
-		query := fmt.Sprintf("filter[meta_query][0][key]=wpcf-product&filter[meta_query][0][value]=%s&filter[meta_query][1][key]=wpcf-version&filter[meta_query][1][value]=%s", product, version)
+		query := fmt.Sprintf(
+			"filter[meta_query][0][key]=wpcf-product&"+
+				"filter[meta_query][0][value]=%s&"+
+				"filter[meta_query][1][key]=wpcf-version&"+
+				"filter[meta_query][1][value]=%s", product, version)
 
-		jsonDocuments, err := wordepress.GetJSONDocuments(user, password, endpoint, query)
+		documents, err := wordepress.GetDocuments(user, password, endpoint, query)
 		if err != nil {
-			log.Fatalf("Unable to get JSON documents: %v", err)
+			log.Fatalf("Unable to get documents: %v", err)
 		}
 
-		err = wordepress.DeleteJSONDocuments(user, password, endpoint, jsonDocuments)
+		err = wordepress.DeleteDocuments(user, password, endpoint, documents)
 		if err != nil {
-			log.Fatalf("Unable to delete JSON documents: %v", err)
+			log.Fatalf("Unable to delete documents: %v", err)
 		}
 	},
 }
