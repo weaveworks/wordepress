@@ -89,7 +89,10 @@ func parseFile(product, version, path string, parent *Document) (*Document, []*I
 	}
 
 	base := strings.TrimSuffix(stdpath.Base(path), ".md")
-	slug := qualifySlug(product, version, base)
+	slug, err := sanitiseSlug(qualifySlug(product, version, base))
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return &Document{
 		LocalParent: parent,

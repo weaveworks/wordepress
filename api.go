@@ -45,7 +45,7 @@ func PostDocument(user, password, endpoint string, document *Document) (*Documen
 	}
 
 	// Ensure server honoured our slug
-	if remoteDocument.Slug != sanitiseSlug(document.Slug) {
+	if remoteDocument.Slug != document.Slug {
 		return nil, fmt.Errorf("duplicate slug: requested %s, response %s",
 			document.Slug, remoteDocument.Slug)
 	}
