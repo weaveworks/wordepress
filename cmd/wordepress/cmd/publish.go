@@ -159,8 +159,14 @@ var publishCmd = &cobra.Command{
 			}
 		}
 
-		// Remove remote documents which lack a local companion
+		// Remove residual remote documents
 		for _, remoteDocument := range existing {
+			if remoteDocument.Product != product || remoteDocument.Version != version {
+				// meta_query filter was ignored, most likely due to wrong plugin version
+				log.Printf("Skipping delete of %s due to product/version mismatch. "+
+					"Is your plugin up to date?", remoteDocument.Slug)
+				continue
+			}
 			log.Printf("Deleting document: %s", remoteDocument.Slug)
 			err := wordepress.DeleteDocument(user, password, endpoint, remoteDocument)
 			if err != nil {

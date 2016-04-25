@@ -30,9 +30,19 @@ var deleteCmd = &cobra.Command{
 			log.Fatalf("Unable to get documents: %v", err)
 		}
 
-		err = wordepress.DeleteDocuments(user, password, endpoint, documents)
-		if err != nil {
-			log.Fatalf("Unable to delete documents: %v", err)
+		for _, document := range documents {
+			if document.Product != product || document.Version != version {
+				// meta_query filter was ignored, most likely due to wrong plugin version
+				log.Printf("Skipping delete of %s due to product/version mismatch. "+
+					"Is your plugin up to date?", document.Slug)
+				continue
+			}
+
+			log.Printf("Deleting document: %s", document.Slug)
+			err := wordepress.DeleteDocument(user, password, endpoint, document)
+			if err != nil {
+				log.Fatalf("Error deleting document: %v", err)
+			}
 		}
 	},
 }

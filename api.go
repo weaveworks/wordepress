@@ -158,13 +158,3 @@ func DeleteDocument(user, password, endpoint string, jsonDocument *Document) err
 	}
 	return nil
 }
-
-func DeleteDocuments(user, password, endpoint string, jsonDocuments []*Document) error {
-	for _, jsonDocument := range jsonDocuments {
-		err := DeleteDocument(user, password, endpoint, jsonDocument)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
