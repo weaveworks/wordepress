@@ -103,7 +103,7 @@ var publishCmd = &cobra.Command{
 		// of the title and content JSON for comparison with local values
 		endpoint := fmt.Sprintf("%s/wp-json/wp/v2/documentation", baseURL)
 		query := fmt.Sprintf(
-			"context=edit&"+
+			"context=edit&per_page=100&"+
 				"filter[meta_query][0][key]=wpcf-product&"+
 				"filter[meta_query][0][value]=%s&"+
 				"filter[meta_query][1][key]=wpcf-version&"+

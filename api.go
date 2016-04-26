@@ -99,8 +99,6 @@ func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
 		request.SetBasicAuth(user, password)
 		request.Header.Set("Accept", "application/json")
 
-		log.Printf("Loading page %d from %s", page, endpoint)
-
 		client := &http.Client{}
 		response, err := client.Do(request)
 		if err != nil {
@@ -128,6 +126,7 @@ func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
 		}
 
 		for i := 0; i < len(jsonPage); i++ {
+			log.Printf("Loaded document %s", jsonPage[i].Slug)
 			jsonDocuments = append(jsonDocuments, &jsonPage[i])
 		}
 	}
