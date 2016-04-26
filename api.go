@@ -20,8 +20,6 @@ func PostDocument(user, password, endpoint string, document *Document) (*Documen
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 
-	log.Printf("Uploading document: %s", document.Slug)
-
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
@@ -64,8 +62,6 @@ func PutDocument(user, password, endpoint string, ID int, document *Document) (*
 	request.SetBasicAuth(user, password)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
-
-	log.Printf("Updating document: %s", document.Slug)
 
 	client := &http.Client{}
 	response, err := client.Do(request)

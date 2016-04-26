@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	dryRun   bool
 	baseURL  string
 	user     string
 	password string
@@ -29,6 +30,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "", false, "Dry run only - make no remote changes")
 	RootCmd.PersistentFlags().StringVarP(&baseURL, "url", "", "http://wordpress.local", "WordPress URL")
 	RootCmd.PersistentFlags().StringVarP(&user, "user", "", "", "Username for WordPress authentication")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password for WordPress authentication")

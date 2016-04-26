@@ -38,8 +38,6 @@ func postImage(image *wordepress.Image) error {
 	request.Header.Set("Content-Disposition", `attachment; filename="`+name+`"`)
 	request.Header.Set("Accept", "application/json")
 
-	log.Printf("Uploading image: %s", name)
-
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
@@ -125,21 +123,36 @@ var publishCmd = &cobra.Command{
 			}
 			if remoteDocument, ok := existing[localDocument.Slug]; ok {
 				if identical(localDocument, remoteDocument) {
-					log.Printf("Skipping document: %s", localDocument.Slug)
+					if dryRun {
+						log.Printf("Would skip document: %s", localDocument.Slug)
+					} else {
+						log.Printf("Skipping document: %s", localDocument.Slug)
+					}
 				} else {
-					remoteDocument, err = wordepress.PutDocument(user, password, endpoint, remoteDocument.ID, localDocument)
-					if err != nil {
-						log.Fatalf("Error updating document: %v", err)
+					if dryRun {
+						log.Printf("Would update document: %s", localDocument.Slug)
+					} else {
+						log.Printf("Updating document: %s", localDocument.Slug)
+						remoteDocument, err = wordepress.PutDocument(user, password, endpoint, remoteDocument.ID, localDocument)
+						if err != nil {
+							log.Fatalf("Error updating document: %v", err)
+						}
 					}
 				}
 				localDocument.RemoteDocument = remoteDocument
 				delete(existing, localDocument.Slug)
 			} else {
-				remoteDocument, err := wordepress.PostDocument(user, password, endpoint, localDocument)
-				if err != nil {
-					log.Fatalf("Error uploading document: %v", err)
+				if dryRun {
+					log.Printf("Would upload document: %s", localDocument.Slug)
+					localDocument.RemoteDocument = &wordepress.Document{}
+				} else {
+					log.Printf("Uploading document: %s", localDocument.Slug)
+					remoteDocument, err := wordepress.PostDocument(user, password, endpoint, localDocument)
+					if err != nil {
+						log.Fatalf("Error uploading document: %v", err)
+					}
+					localDocument.RemoteDocument = remoteDocument
 				}
-				localDocument.RemoteDocument = remoteDocument
 			}
 		}
 
@@ -150,12 +163,21 @@ var publishCmd = &cobra.Command{
 				log.Fatalf("Error testing image existence: %v", err)
 			}
 			if exists {
-				log.Printf("Skipping image: %s%s", image.Hash, image.Extension)
+				if dryRun {
+					log.Printf("Would skip image: %s%s", image.Hash, image.Extension)
+				} else {
+					log.Printf("Skipping image: %s%s", image.Hash, image.Extension)
+				}
 				continue
 			}
-			err = postImage(image)
-			if err != nil {
-				log.Fatalf("Error uploading image: %v", err)
+			if dryRun {
+				log.Printf("Would upload image: %s%s", image.Hash, image.Extension)
+			} else {
+				log.Printf("Uploading image: %s%s", image.Hash, image.Extension)
+				err = postImage(image)
+				if err != nil {
+					log.Fatalf("Error uploading image: %v", err)
+				}
 			}
 		}
 
@@ -167,10 +189,14 @@ var publishCmd = &cobra.Command{
 					"Is your plugin up to date?", remoteDocument.Slug)
 				continue
 			}
-			log.Printf("Deleting document: %s", remoteDocument.Slug)
-			err := wordepress.DeleteDocument(user, password, endpoint, remoteDocument)
-			if err != nil {
-				log.Fatalf("Error deleting document: %v", err)
+			if dryRun {
+				log.Printf("Would delete document: %s", remoteDocument.Slug)
+			} else {
+				log.Printf("Deleting document: %s", remoteDocument.Slug)
+				err := wordepress.DeleteDocument(user, password, endpoint, remoteDocument)
+				if err != nil {
+					log.Fatalf("Error deleting document: %v", err)
+				}
 			}
 		}
 	},

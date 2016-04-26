@@ -38,10 +38,14 @@ var deleteCmd = &cobra.Command{
 				continue
 			}
 
-			log.Printf("Deleting document: %s", document.Slug)
-			err := wordepress.DeleteDocument(user, password, endpoint, document)
-			if err != nil {
-				log.Fatalf("Error deleting document: %v", err)
+			if dryRun {
+				log.Printf("Would delete document: %s", document.Slug)
+			} else {
+				log.Printf("Deleting document: %s", document.Slug)
+				err := wordepress.DeleteDocument(user, password, endpoint, document)
+				if err != nil {
+					log.Fatalf("Error deleting document: %v", err)
+				}
 			}
 		}
 	},
