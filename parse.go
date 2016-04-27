@@ -100,6 +100,7 @@ func parseFile(product, version, path string, parent *Document) (*Document, []*I
 		MenuOrder:   menuOrder,
 		Product:     product,
 		Version:     version,
+		Name:        base,
 		Slug:        slug,
 		Content:     Text{Raw: string(content)},
 		Status:      "publish"}, images, nil

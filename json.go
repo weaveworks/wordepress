@@ -17,6 +17,7 @@ type Document struct {
 	Slug      string `json:"slug"`
 	Product   string `json:"wpcf-product"`
 	Version   string `json:"wpcf-version"`
+	Name      string `json:"wpcf-name"`
 	Status    string `json:"status"`
 }
 

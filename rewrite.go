@@ -35,13 +35,7 @@ func rewrite(product, version, srcdir string, markdown []byte) ([]byte, []*Image
 			trimmed := strings.TrimPrefix(href, "/site/")
 			trimmed = strings.TrimSuffix(trimmed, ".md")
 
-			// Fully qualify each slug and reassemble the path
-			var slugs []string
-			for _, slug := range strings.Split(trimmed, "/") {
-				slugs = append(slugs, qualifySlug(product, version, slug))
-			}
-
-			return []byte(fmt.Sprintf(`<a href="/documentation/%s`, strings.Join(slugs, "/")))
+			return []byte(fmt.Sprintf(`<a href="/docs/%s/%s/%s/`, product, version, trimmed))
 		}
 
 		return bytes
