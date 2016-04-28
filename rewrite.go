@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var AnchorRegexp = regexp.MustCompile(`<a href="([^"]*)"`)
+var AnchorRegexp = regexp.MustCompile(`<a href="([^#"]*)`)
 var ImgRegexp = regexp.MustCompile(`<img src="([^"]*)"`)
 var BackslashRegexp = regexp.MustCompile(`\\`)
 
@@ -41,7 +41,7 @@ func rewrite(product, version, srcdir string, markdown []byte) ([]byte, []*Image
 				slugs = append(slugs, qualifySlug(product, version, slug))
 			}
 
-			return []byte(fmt.Sprintf(`<a href="/documentation/%s"`, strings.Join(slugs, "/")))
+			return []byte(fmt.Sprintf(`<a href="/documentation/%s`, strings.Join(slugs, "/")))
 		}
 
 		return bytes
