@@ -22,6 +22,6 @@ func sanitiseSlug(slug string) (string, error) {
 	return strings.Replace(slug, ".", "-", -1), nil
 }
 
-func qualifySlug(product, version, base string) string {
-	return fmt.Sprintf("%s-%s-%s", product, version, base)
+func qualifySlug(product, tag, base string) string {
+	return fmt.Sprintf("%s-%s-%s", product, tag, base)
 }

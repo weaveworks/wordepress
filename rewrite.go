@@ -25,7 +25,7 @@ func convertToHTML(input []byte) []byte {
 	return blackfriday.MarkdownOptions(input, renderer, options)
 }
 
-func rewrite(product, version, srcdir string, markdown []byte) ([]byte, []*Image, error) {
+func rewrite(product, version, tag, srcdir string, markdown []byte) ([]byte, []*Image, error) {
 	rewriteAnchors := func(bytes []byte) []byte {
 		// This match must succeed or we wouldn't have been invoked
 		href := string(AnchorRegexp.FindSubmatch(bytes)[1])
@@ -35,7 +35,7 @@ func rewrite(product, version, srcdir string, markdown []byte) ([]byte, []*Image
 			trimmed := strings.TrimPrefix(href, "/site/")
 			trimmed = strings.TrimSuffix(trimmed, ".md")
 
-			return []byte(fmt.Sprintf(`<a href="/docs/%s/%s/%s/`, product, version, trimmed))
+			return []byte(fmt.Sprintf(`<a href="/docs/%s/%s/%s/`, product, tag, trimmed))
 		}
 
 		return bytes

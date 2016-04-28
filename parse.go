@@ -66,7 +66,7 @@ func validateAttributes(attributes map[string]string) (string, int, error) {
 	return title, menuOrder, nil
 }
 
-func parseFile(product, version, path string, parent *Document) (*Document, []*Image, error) {
+func parseFile(product, version, tag, path string, parent *Document) (*Document, []*Image, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error open path: %v", err)
@@ -83,13 +83,13 @@ func parseFile(product, version, path string, parent *Document) (*Document, []*I
 		return nil, nil, err
 	}
 
-	content, images, err := rewrite(product, version, stdpath.Dir(path), markdown)
+	content, images, err := rewrite(product, version, tag, stdpath.Dir(path), markdown)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	base := strings.TrimSuffix(stdpath.Base(path), ".md")
-	slug, err := sanitiseSlug(qualifySlug(product, version, base))
+	slug, err := sanitiseSlug(qualifySlug(product, tag, base))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -101,12 +101,13 @@ func parseFile(product, version, path string, parent *Document) (*Document, []*I
 		Product:     product,
 		Version:     version,
 		Name:        base,
+		Tag:		 tag,
 		Slug:        slug,
 		Content:     Text{Raw: string(content)},
 		Status:      "publish"}, images, nil
 }
 
-func recursiveParseSite(product, version, path string, parent *Document) ([]*Document, []*Image, error) {
+func recursiveParseSite(product, version, tag, path string, parent *Document) ([]*Document, []*Image, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return nil, nil, err
@@ -126,7 +127,7 @@ func recursiveParseSite(product, version, path string, parent *Document) ([]*Doc
 	var documents []*Document
 	var siteImages []*Image
 	for _, file := range files {
-		document, images, err := parseFile(product, version, file, parent)
+		document, images, err := parseFile(product, version, tag, file, parent)
 		if err != nil {
 			return nil, nil, fmt.Errorf("parse %v: %v", file, err)
 		}
@@ -136,7 +137,7 @@ func recursiveParseSite(product, version, path string, parent *Document) ([]*Doc
 
 		childPath := strings.TrimSuffix(file, ".md")
 		if _, err := os.Stat(childPath); err == nil {
-			children, images, err := recursiveParseSite(product, version, childPath, document)
+			children, images, err := recursiveParseSite(product, version, tag, childPath, document)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -148,6 +149,6 @@ func recursiveParseSite(product, version, path string, parent *Document) ([]*Doc
 	return documents, siteImages, nil
 }
 
-func ParseSite(product, version, path string) ([]*Document, []*Image, error) {
-	return recursiveParseSite(product, version, path, nil)
+func ParseSite(product, version, tag, path string) ([]*Document, []*Image, error) {
+	return recursiveParseSite(product, version, tag, path, nil)
 }

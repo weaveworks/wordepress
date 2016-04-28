@@ -18,6 +18,7 @@ type Document struct {
 	Product   string `json:"wpcf-product"`
 	Version   string `json:"wpcf-version"`
 	Name      string `json:"wpcf-name"`
+	Tag       string `json:"wpcf-tag"`
 	Status    string `json:"status"`
 }
 

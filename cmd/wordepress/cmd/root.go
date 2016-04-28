@@ -13,7 +13,7 @@ var (
 	user     string
 	password string
 	product  string
-	version  string
+	tag      string
 )
 
 var RootCmd = &cobra.Command{
@@ -35,5 +35,5 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&user, "user", "", "", "Username for WordPress authentication")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password for WordPress authentication")
 	RootCmd.PersistentFlags().StringVarP(&product, "product", "", "", "Value for document product field")
-	RootCmd.PersistentFlags().StringVarP(&version, "version", "", "", "Value for document version field")
+	RootCmd.PersistentFlags().StringVarP(&tag, "tag", "", "", "Value for document tag field")
 }

@@ -12,6 +12,10 @@ import (
 	"os"
 )
 
+var (
+	version string
+)
+
 func headImage(image *wordepress.Image) (bool, error) {
 	url := baseURL + "/wp-content/uploads/" + image.Hash + image.Extension
 	request, err := http.NewRequest("HEAD", url, nil)
@@ -80,7 +84,8 @@ func identical(local *wordepress.Document, remote *wordepress.Document) bool {
 	return local.MenuOrder == remote.MenuOrder &&
 		local.Title.Raw == remote.Title.Raw &&
 		local.Content.Raw == remote.Content.Raw &&
-		local.Parent == remote.Parent
+		local.Parent == remote.Parent &&
+		local.Version == remote.Version
 }
 
 var publishCmd = &cobra.Command{
@@ -88,13 +93,13 @@ var publishCmd = &cobra.Command{
 	Short: "Publish a site into WordPress",
 	Long:  `Publish a site into WordPress`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if product == "" || version == "" || user == "" || password == "" || len(args) != 1 {
+		if product == "" || tag == "" || version == "" || user == "" || password == "" || len(args) != 1 {
 			cmd.Usage()
 			os.Exit(1)
 		}
 
 		// Load local site
-		localDocuments, images, err := wordepress.ParseSite(product, version, args[0])
+		localDocuments, images, err := wordepress.ParseSite(product, version, tag, args[0])
 		if err != nil {
 			log.Fatalf("Error parsing site: %v", err)
 		}
@@ -106,8 +111,8 @@ var publishCmd = &cobra.Command{
 			"context=edit&per_page=100&"+
 				"filter[meta_query][0][key]=wpcf-product&"+
 				"filter[meta_query][0][value]=%s&"+
-				"filter[meta_query][1][key]=wpcf-version&"+
-				"filter[meta_query][1][value]=%s", product, version)
+				"filter[meta_query][1][key]=wpcf-tag&"+
+				"filter[meta_query][1][value]=%s", product, tag)
 
 		remoteDocuments, err := wordepress.GetDocuments(user, password, endpoint, query)
 		if err != nil {
@@ -203,5 +208,6 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
+	publishCmd.Flags().StringVarP(&version, "version", "", "", "Value for document version field")
 	RootCmd.AddCommand(publishCmd)
 }

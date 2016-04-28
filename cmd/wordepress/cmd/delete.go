@@ -13,7 +13,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a site from WordPress",
 	Long:  `Delete a site from WordPress`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if product == "" || version == "" || user == "" || password == "" {
+		if product == "" || tag == "" || user == "" || password == "" || len(args) > 0 {
 			cmd.Usage()
 			os.Exit(1)
 		}
@@ -23,8 +23,8 @@ var deleteCmd = &cobra.Command{
 			"context=edit&per_page=100&"+
 				"filter[meta_query][0][key]=wpcf-product&"+
 				"filter[meta_query][0][value]=%s&"+
-				"filter[meta_query][1][key]=wpcf-version&"+
-				"filter[meta_query][1][value]=%s", product, version)
+				"filter[meta_query][1][key]=wpcf-tag&"+
+				"filter[meta_query][1][value]=%s", product, tag)
 
 		documents, err := wordepress.GetDocuments(user, password, endpoint, query)
 		if err != nil {
@@ -32,7 +32,7 @@ var deleteCmd = &cobra.Command{
 		}
 
 		for _, document := range documents {
-			if document.Product != product || document.Version != version {
+			if document.Product != product || document.Tag != tag {
 				// meta_query filter was ignored, most likely due to wrong plugin version
 				log.Printf("Skipping delete of %s due to product/version mismatch. "+
 					"Is your plugin up to date?", document.Slug)

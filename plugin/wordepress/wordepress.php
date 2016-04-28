@@ -45,6 +45,14 @@ function slug_register_document() {
             'schema'          => null,
         )
     );
+    register_rest_field( 'documentation',
+        'wpcf-tag',
+        array(
+            'get_callback'    => 'document_get_meta',
+            'update_callback' => 'document_update_meta',
+            'schema'          => null,
+        )
+    );
 }
 
 function document_get_meta( $object, $field_name, $request ) {
