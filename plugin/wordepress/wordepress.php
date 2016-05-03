@@ -2,7 +2,7 @@
 /*
 Plugin Name: Weaveworks Wordepress
 Description: Host technical documentation in WordPress
-Version: 0.1
+Version: 1.0.0
 Author: Adam Harrison
 */
 
