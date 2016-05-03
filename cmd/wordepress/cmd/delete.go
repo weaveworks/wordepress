@@ -20,7 +20,8 @@ var deleteCmd = &cobra.Command{
 
 		endpoint := fmt.Sprintf("%s/wp-json/wp/v2/documentation", baseURL)
 		query := fmt.Sprintf(
-			"filter[meta_query][0][key]=wpcf-product&"+
+			"context=edit&per_page=100&"+
+				"filter[meta_query][0][key]=wpcf-product&"+
 				"filter[meta_query][0][value]=%s&"+
 				"filter[meta_query][1][key]=wpcf-version&"+
 				"filter[meta_query][1][value]=%s", product, version)
