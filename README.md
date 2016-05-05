@@ -104,14 +104,14 @@ your WordPress instance:
 > name) whilst the `--password` parameter is the value emitted by 'Add
 > New' above
 
-    wordepress publish --url https://dev-weavewww.pantheon.io \
+    wordepress publish --url https://dev-weavewww.pantheonsite.io \
         --user <wordpress-username> \
         --password <generated-application-password> \
         --product net --tag latest --version 1.5.0 \
         ~/workspace/weave/site
 
 Will result in e.g. `site/introducing-weave.md` being available at
-https://dev-weavewww.pantheon.io/docs/net/latest/introducing-weave/
+https://dev-weavewww.pantheonsite.io/docs/net/latest/introducing-weave/
 with 'Weave net 1.5.0 Documentation` as the navigation description.
 
 The general URL pattern for published pages is:
