@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var safeSlugRegexp = regexp.MustCompile(`^[a-z0-9-.]+$`)
+var safeSlugRegexp = regexp.MustCompile(`^[a-z0-9-._]+$`)
 
 func sanitiseSlug(slug string) (string, error) {
 	// WordPress slug sanitisation is far more extensive than this, however in
