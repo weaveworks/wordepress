@@ -34,7 +34,7 @@ var deleteCmd = &cobra.Command{
 		for _, document := range documents {
 			if document.Product != product || document.Tag != tag {
 				// meta_query filter was ignored, most likely due to wrong plugin version
-				log.Printf("Skipping delete of %s due to product/version mismatch. "+
+				log.Printf("Skipping delete of %s due to product/tag mismatch. "+
 					"Is your plugin up to date?", document.Slug)
 				continue
 			}

@@ -188,9 +188,9 @@ var publishCmd = &cobra.Command{
 
 		// Remove residual remote documents
 		for _, remoteDocument := range existing {
-			if remoteDocument.Product != product || remoteDocument.Version != version {
+			if remoteDocument.Product != product || remoteDocument.Tag != tag {
 				// meta_query filter was ignored, most likely due to wrong plugin version
-				log.Printf("Skipping delete of %s due to product/version mismatch. "+
+				log.Printf("Skipping delete of %s due to product/tag mismatch. "+
 					"Is your plugin up to date?", remoteDocument.Slug)
 				continue
 			}
