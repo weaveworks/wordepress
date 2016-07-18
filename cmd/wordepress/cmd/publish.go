@@ -94,7 +94,7 @@ var publishCmd = &cobra.Command{
 	Long:  `Publish a site into WordPress`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if product == "" || tag == "" || version == "" || user == "" || password == "" || len(args) != 1 {
-			cmd.Usage()
+			cmd.UsageFunc()(cmd)
 			os.Exit(1)
 		}
 

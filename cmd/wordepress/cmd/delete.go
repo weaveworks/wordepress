@@ -14,7 +14,7 @@ var deleteCmd = &cobra.Command{
 	Long:  `Delete a site from WordPress`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if product == "" || tag == "" || user == "" || password == "" || len(args) > 0 {
-			cmd.Usage()
+			cmd.UsageFunc()(cmd)
 			os.Exit(1)
 		}
 
