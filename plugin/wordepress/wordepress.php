@@ -73,17 +73,17 @@ function wordepress_allow_meta_query( $valid_vars ) {
     return $valid_vars;
 }
 
-register_activation_hook(__FILE__, "add_document_cpt_rewrite_rule");
+register_activation_hook( __FILE__, "add_document_cpt_rewrite_rule" );
 function add_document_cpt_rewrite_rule() {
 
-	// The space character after pagename= in the rewrite rules is necessary to
-	// avoid triggering the broken 'verbose page match' check in
-	// wp-includes/class-wp.php:parse_request. It's sufficient to defeat
-	// the simplistic regexp there, and is trimmed by Wordpress during query
-	// argument parsing.
+        // The space character after pagename= in the rewrite rules is necessary to
+        // avoid triggering the broken 'verbose page match' check in
+        // wp-includes/class-wp.php:parse_request. It's sufficient to defeat
+        // the simplistic regexp there, and is trimmed by Wordpress during query
+        // argument parsing.
 
     add_rewrite_rule(
-		'docs/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
+        'docs/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
         'index.php?post_type=documentation&pagename= $matches[1]-$matches[2]-$matches[3]/$matches[1]-$matches[2]-$matches[4]',
         'top'
     );
@@ -98,10 +98,8 @@ function add_document_cpt_rewrite_rule() {
     flush_rewrite_rules();
 }
 
-
-register_deactivation_hook(__FILE__, "remove_document_cpt_rewrite_rule");
-function remove_document_cpt_rewrite_rule()
-{
+register_deactivation_hook( __FILE__, "remove_document_cpt_rewrite_rule" );
+function remove_document_cpt_rewrite_rule() {
     // Expensive, so flush on activation/deactivation only
     flush_rewrite_rules();
 }
