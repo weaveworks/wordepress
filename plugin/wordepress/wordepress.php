@@ -2,7 +2,7 @@
 /*
 Plugin Name: Weaveworks Wordepress
 Description: Host technical documentation in WordPress
-Version: 1.0.1
+Version: 1.1.0
 Author: Adam Harrison
 */
 
@@ -18,6 +18,9 @@ function wordepress_init_post_type( $post_type_name ) {
 
 // Register the `document` post type with the REST API
 add_action( 'init', function () { wordepress_init_post_type ( 'documentation' ); }, 100);
+
+// Register the `tutorial` post type with the REST API
+add_action( 'init', function() { wordepress_init_post_type ( 'tutorials' ); }, 100);
 
 add_action( 'rest_api_init', function () {
     register_rest_field( 'documentation',
@@ -46,6 +49,17 @@ add_action( 'rest_api_init', function () {
     );
     register_rest_field( 'documentation',
         'wpcf-tag',
+        array(
+            'get_callback'    => 'wordepress_get_meta',
+            'update_callback' => 'wordepress_update_meta',
+            'schema'          => null,
+        )
+    );
+});
+
+add_action( 'rest_api_init', function () {
+    register_rest_field( 'tutorials',
+        'wpcf-name',
         array(
             'get_callback'    => 'wordepress_get_meta',
             'update_callback' => 'wordepress_update_meta',
