@@ -34,6 +34,6 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&baseURL, "url", "", "http://wordpress.local", "WordPress URL")
 	RootCmd.PersistentFlags().StringVarP(&user, "user", "", "", "Username for WordPress authentication")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password for WordPress authentication")
-	RootCmd.PersistentFlags().StringVarP(&product, "product", "", "", "Value for document product field")
-	RootCmd.PersistentFlags().StringVarP(&tag, "tag", "", "", "Value for document tag field")
+	RootCmd.PersistentFlags().StringVarP(&product, "product", "", "", "Value for custom post product field")
+	RootCmd.PersistentFlags().StringVarP(&tag, "tag", "", "", "Value for custom post tag field")
 }

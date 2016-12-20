@@ -72,15 +72,15 @@ func postImage(image *wordepress.Image) error {
 	return nil
 }
 
-func toMap(rds []*wordepress.Document) map[string]*wordepress.Document {
-	rdm := make(map[string]*wordepress.Document)
+func toMap(rds []*wordepress.CustomPost) map[string]*wordepress.CustomPost {
+	rdm := make(map[string]*wordepress.CustomPost)
 	for i, _ := range rds {
 		rdm[rds[i].Slug] = rds[i]
 	}
 	return rdm
 }
 
-func identical(local *wordepress.Document, remote *wordepress.Document) bool {
+func identical(local *wordepress.CustomPost, remote *wordepress.CustomPost) bool {
 	return local.MenuOrder == remote.MenuOrder &&
 		local.Title.Raw == remote.Title.Raw &&
 		local.Content.Raw == remote.Content.Raw &&
@@ -99,7 +99,7 @@ var publishCmd = &cobra.Command{
 		}
 
 		// Load local site
-		localDocuments, images, err := wordepress.ParseSite(product, version, tag, args[0])
+		localPosts, images, err := wordepress.ParseDir(product, version, tag, args[0])
 		if err != nil {
 			log.Fatalf("Error parsing site: %v", err)
 		}
@@ -114,49 +114,49 @@ var publishCmd = &cobra.Command{
 				"filter[meta_query][1][key]=wpcf-tag&"+
 				"filter[meta_query][1][value]=%s", product, tag)
 
-		remoteDocuments, err := wordepress.GetDocuments(user, password, endpoint, query)
+		remotePosts, err := wordepress.Get(user, password, endpoint, query)
 		if err != nil {
-			log.Fatalf("Unable to get JSON documents: %v", err)
+			log.Fatalf("Unable to get JSON post: %v", err)
 		}
 
-		// Create/update documents
-		existing := toMap(remoteDocuments)
-		for _, localDocument := range localDocuments {
-			if localDocument.LocalParent != nil {
-				// Pre-order traversal guarantees the remote document will be set
-				localDocument.Parent = localDocument.LocalParent.RemoteDocument.ID
+		// Create/update posts
+		existing := toMap(remotePosts)
+		for _, localPost := range localPosts {
+			if localPost.LocalParent != nil {
+				// Pre-order traversal guarantees the remote post will be set
+				localPost.Parent = localPost.LocalParent.RemotePost.ID
 			}
-			if remoteDocument, ok := existing[localDocument.Slug]; ok {
-				if identical(localDocument, remoteDocument) {
+			if remotePost, ok := existing[localPost.Slug]; ok {
+				if identical(localPost, remotePost) {
 					if dryRun {
-						log.Printf("Would skip document: %s", localDocument.Slug)
+						log.Printf("Would skip post: %s", localPost.Slug)
 					} else {
-						log.Printf("Skipping document: %s", localDocument.Slug)
+						log.Printf("Skipping post: %s", localPost.Slug)
 					}
 				} else {
 					if dryRun {
-						log.Printf("Would update document: %s", localDocument.Slug)
+						log.Printf("Would update post: %s", localPost.Slug)
 					} else {
-						log.Printf("Updating document: %s", localDocument.Slug)
-						remoteDocument, err = wordepress.PutDocument(user, password, endpoint, remoteDocument.ID, localDocument)
+						log.Printf("Updating post: %s", localPost.Slug)
+						remotePost, err = wordepress.Put(user, password, endpoint, remotePost.ID, localPost)
 						if err != nil {
-							log.Fatalf("Error updating document: %v", err)
+							log.Fatalf("Error updating post: %v", err)
 						}
 					}
 				}
-				localDocument.RemoteDocument = remoteDocument
-				delete(existing, localDocument.Slug)
+				localPost.RemotePost = remotePost
+				delete(existing, localPost.Slug)
 			} else {
 				if dryRun {
-					log.Printf("Would upload document: %s", localDocument.Slug)
-					localDocument.RemoteDocument = &wordepress.Document{}
+					log.Printf("Would upload post: %s", localPost.Slug)
+					localPost.RemotePost = &wordepress.CustomPost{}
 				} else {
-					log.Printf("Uploading document: %s", localDocument.Slug)
-					remoteDocument, err := wordepress.PostDocument(user, password, endpoint, localDocument)
+					log.Printf("Uploading post: %s", localPost.Slug)
+					remotePost, err := wordepress.Post(user, password, endpoint, localPost)
 					if err != nil {
-						log.Fatalf("Error uploading document: %v", err)
+						log.Fatalf("Error uploading post: %v", err)
 					}
-					localDocument.RemoteDocument = remoteDocument
+					localPost.RemotePost = remotePost
 				}
 			}
 		}
@@ -186,21 +186,21 @@ var publishCmd = &cobra.Command{
 			}
 		}
 
-		// Remove residual remote documents
-		for _, remoteDocument := range existing {
-			if remoteDocument.Product != product || remoteDocument.Tag != tag {
+		// Remove residual remote posts
+		for _, remotePost := range existing {
+			if remotePost.Product != product || remotePost.Tag != tag {
 				// meta_query filter was ignored, most likely due to wrong plugin version
 				log.Printf("Skipping delete of %s due to product/tag mismatch. "+
-					"Is your plugin up to date?", remoteDocument.Slug)
+					"Is your plugin up to date?", remotePost.Slug)
 				continue
 			}
 			if dryRun {
-				log.Printf("Would delete document: %s", remoteDocument.Slug)
+				log.Printf("Would delete post: %s", remotePost.Slug)
 			} else {
-				log.Printf("Deleting document: %s", remoteDocument.Slug)
-				err := wordepress.DeleteDocument(user, password, endpoint, remoteDocument)
+				log.Printf("Deleting post: %s", remotePost.Slug)
+				err := wordepress.Delete(user, password, endpoint, remotePost)
 				if err != nil {
-					log.Fatalf("Error deleting document: %v", err)
+					log.Fatalf("Error deleting post: %v", err)
 				}
 			}
 		}
@@ -208,6 +208,6 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
-	publishCmd.Flags().StringVarP(&version, "version", "", "", "Value for document version field")
+	publishCmd.Flags().StringVarP(&version, "version", "", "", "Value for custom post version field")
 	RootCmd.AddCommand(publishCmd)
 }

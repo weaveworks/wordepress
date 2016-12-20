@@ -26,26 +26,26 @@ var deleteCmd = &cobra.Command{
 				"filter[meta_query][1][key]=wpcf-tag&"+
 				"filter[meta_query][1][value]=%s", product, tag)
 
-		documents, err := wordepress.GetDocuments(user, password, endpoint, query)
+		posts, err := wordepress.Get(user, password, endpoint, query)
 		if err != nil {
-			log.Fatalf("Unable to get documents: %v", err)
+			log.Fatalf("Unable to get posts: %v", err)
 		}
 
-		for _, document := range documents {
-			if document.Product != product || document.Tag != tag {
+		for _, post := range posts {
+			if post.Product != product || post.Tag != tag {
 				// meta_query filter was ignored, most likely due to wrong plugin version
 				log.Printf("Skipping delete of %s due to product/tag mismatch. "+
-					"Is your plugin up to date?", document.Slug)
+					"Is your plugin up to date?", post.Slug)
 				continue
 			}
 
 			if dryRun {
-				log.Printf("Would delete document: %s", document.Slug)
+				log.Printf("Would delete post: %s", post.Slug)
 			} else {
-				log.Printf("Deleting document: %s", document.Slug)
-				err := wordepress.DeleteDocument(user, password, endpoint, document)
+				log.Printf("Deleting post: %s", post.Slug)
+				err := wordepress.Delete(user, password, endpoint, post)
 				if err != nil {
-					log.Fatalf("Error deleting document: %v", err)
+					log.Fatalf("Error deleting post: %v", err)
 				}
 			}
 		}

@@ -9,8 +9,8 @@ import (
 	"net/http"
 )
 
-func PostDocument(user, password, endpoint string, document *Document) (*Document, error) {
-	requestBytes, err := json.Marshal(document)
+func Post(user, password, endpoint string, post *CustomPost) (*CustomPost, error) {
+	requestBytes, err := json.Marshal(post)
 	if err != nil {
 		return nil, err
 	}
@@ -36,23 +36,23 @@ func PostDocument(user, password, endpoint string, document *Document) (*Documen
 		return nil, fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
 	}
 
-	var remoteDocument Document
-	err = json.Unmarshal(responseBytes, &remoteDocument)
+	var remotePost CustomPost
+	err = json.Unmarshal(responseBytes, &remotePost)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ensure server honoured our slug
-	if remoteDocument.Slug != document.Slug {
+	if remotePost.Slug != post.Slug {
 		return nil, fmt.Errorf("duplicate slug: requested %s, response %s",
-			document.Slug, remoteDocument.Slug)
+			post.Slug, remotePost.Slug)
 	}
 
-	return &remoteDocument, nil
+	return &remotePost, nil
 }
 
-func PutDocument(user, password, endpoint string, ID int, document *Document) (*Document, error) {
-	requestBytes, err := json.Marshal(document)
+func Put(user, password, endpoint string, ID int, post *CustomPost) (*CustomPost, error) {
+	requestBytes, err := json.Marshal(post)
 	if err != nil {
 		return nil, err
 	}
@@ -79,17 +79,17 @@ func PutDocument(user, password, endpoint string, ID int, document *Document) (*
 		return nil, fmt.Errorf("post failed: %v %s", response.Status, string(responseBytes))
 	}
 
-	var remoteDocument Document
-	err = json.Unmarshal(responseBytes, &remoteDocument)
+	var remotePost CustomPost
+	err = json.Unmarshal(responseBytes, &remotePost)
 	if err != nil {
 		return nil, err
 	}
 
-	return &remoteDocument, nil
+	return &remotePost, nil
 }
 
-func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
-	var jsonDocuments []*Document
+func Get(user, password, endpoint, query string) ([]*CustomPost, error) {
+	var jsonPosts []*CustomPost
 	for page := 1; true; page++ {
 		url := fmt.Sprintf("%s?%s&page=%d", endpoint, query, page)
 		request, err := http.NewRequest("GET", url, nil)
@@ -115,7 +115,7 @@ func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
 			return nil, fmt.Errorf("%v", response.Status)
 		}
 
-		var jsonPage []Document
+		var jsonPage []CustomPost
 		err = json.Unmarshal(responseBytes, &jsonPage)
 		if err != nil {
 			return nil, err
@@ -126,15 +126,15 @@ func GetDocuments(user, password, endpoint, query string) ([]*Document, error) {
 		}
 
 		for i := 0; i < len(jsonPage); i++ {
-			log.Printf("Loaded document %s", jsonPage[i].Slug)
-			jsonDocuments = append(jsonDocuments, &jsonPage[i])
+			log.Printf("Loaded post %s", jsonPage[i].Slug)
+			jsonPosts = append(jsonPosts, &jsonPage[i])
 		}
 	}
-	return jsonDocuments, nil
+	return jsonPosts, nil
 }
 
-func DeleteDocument(user, password, endpoint string, jsonDocument *Document) error {
-	url := fmt.Sprintf("%s/%d?force=true", endpoint, jsonDocument.ID)
+func Delete(user, password, endpoint string, post *CustomPost) error {
+	url := fmt.Sprintf("%s/%d?force=true", endpoint, post.ID)
 	request, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return err

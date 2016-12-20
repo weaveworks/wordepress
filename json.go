@@ -5,9 +5,9 @@ type Text struct {
 	Raw      string `json:"raw"`
 }
 
-type Document struct {
-	LocalParent    *Document `json:"-"`
-	RemoteDocument *Document `json:"-"`
+type CustomPost struct {
+	LocalParent *CustomPost `json:"-"`
+	RemotePost  *CustomPost `json:"-"`
 
 	ID        int    `json:"id,omitempty"`
 	Title     Text   `json:"title"`

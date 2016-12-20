@@ -66,7 +66,7 @@ func validateAttributes(attributes map[string]string) (string, int, error) {
 	return title, menuOrder, nil
 }
 
-func parseFile(product, version, tag, path string, parent *Document) (*Document, []*Image, error) {
+func parseFile(product, version, tag, path string, parent *CustomPost) (*CustomPost, []*Image, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error open path: %v", err)
@@ -94,20 +94,20 @@ func parseFile(product, version, tag, path string, parent *Document) (*Document,
 		return nil, nil, err
 	}
 
-	return &Document{
+	return &CustomPost{
 		LocalParent: parent,
 		Title:       Text{Raw: title},
 		MenuOrder:   menuOrder,
 		Product:     product,
 		Version:     version,
 		Name:        base,
-		Tag:		 tag,
+		Tag:         tag,
 		Slug:        slug,
 		Content:     Text{Raw: string(content)},
 		Status:      "publish"}, images, nil
 }
 
-func recursiveParseSite(product, version, tag, path string, parent *Document) ([]*Document, []*Image, error) {
+func recursiveParseDir(product, version, tag, path string, parent *CustomPost) ([]*CustomPost, []*Image, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return nil, nil, err
@@ -124,31 +124,31 @@ func recursiveParseSite(product, version, tag, path string, parent *Document) ([
 
 	log.Printf("Loading %d markdown files from %s", len(files), path)
 
-	var documents []*Document
+	var posts []*CustomPost
 	var siteImages []*Image
 	for _, file := range files {
-		document, images, err := parseFile(product, version, tag, file, parent)
+		post, images, err := parseFile(product, version, tag, file, parent)
 		if err != nil {
 			return nil, nil, fmt.Errorf("parse %v: %v", file, err)
 		}
 
-		documents = append(documents, document)
+		posts = append(posts, post)
 		siteImages = append(siteImages, images...)
 
 		childPath := strings.TrimSuffix(file, ".md")
 		if _, err := os.Stat(childPath); err == nil {
-			children, images, err := recursiveParseSite(product, version, tag, childPath, document)
+			children, images, err := recursiveParseDir(product, version, tag, childPath, post)
 			if err != nil {
 				return nil, nil, err
 			}
-			documents = append(documents, children...)
+			posts = append(posts, children...)
 			siteImages = append(siteImages, images...)
 		}
 	}
 
-	return documents, siteImages, nil
+	return posts, siteImages, nil
 }
 
-func ParseSite(product, version, tag, path string) ([]*Document, []*Image, error) {
-	return recursiveParseSite(product, version, tag, path, nil)
+func ParseDir(product, version, tag, path string) ([]*CustomPost, []*Image, error) {
+	return recursiveParseDir(product, version, tag, path, nil)
 }
