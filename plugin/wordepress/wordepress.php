@@ -94,6 +94,18 @@ register_activation_hook( __FILE__, function () {
     // argument parsing.
 
     add_rewrite_rule(
+        'docs/tutorials/([^/]+)/([^/]+)/([^/]+)',
+        'index.php?post_type=tutorials&pagename= tutorials-$matches[1]-$matches[2]/tutorials-$matches[1]-$matches[3]',
+        'top'
+    );
+
+    add_rewrite_rule(
+        'docs/tutorials/([^/]+)/([^/]+)',
+        'index.php?post_type=tutorials&pagename= tutorials-$matches[1]-$matches[2]',
+        'top'
+    );
+
+    add_rewrite_rule(
         'docs/([^/]+)/([^/]+)/([^/]+)/([^/]+)',
         'index.php?post_type=documentation&pagename= $matches[1]-$matches[2]-$matches[3]/$matches[1]-$matches[2]-$matches[4]',
         'top'
