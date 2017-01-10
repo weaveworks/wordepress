@@ -35,6 +35,9 @@ func rewrite(product, version, tag, srcdir string, markdown []byte) ([]byte, []*
 			trimmed := strings.TrimPrefix(href, "/site/")
 			trimmed = strings.TrimSuffix(trimmed, ".md")
 
+			if product == "tutorials" {
+				return []byte(fmt.Sprintf(`<a href="/tutorials/%s/%s/`, tag, trimmed))
+			}
 			return []byte(fmt.Sprintf(`<a href="/docs/%s/%s/%s/`, product, tag, trimmed))
 		}
 

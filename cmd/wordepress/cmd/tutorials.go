@@ -14,7 +14,7 @@ var publishTutorialsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		path := "/wp-json/wp/v2/tutorials"
+		path := "/wp-json/wp/v2/tutorials-post-type"
 		query := "filter[meta_query][1][key]=wpcf-tag&" +
 			"filter[meta_query][1][value]=" + tag
 
@@ -31,7 +31,7 @@ var deleteTutorialsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		path := "/wp-json/wp/v2/tutorials"
+		path := "/wp-json/wp/v2/tutorials-post-type"
 		query := "filter[meta_query][1][key]=wpcf-tag&" +
 			"filter[meta_query][1][value]=" + tag
 
