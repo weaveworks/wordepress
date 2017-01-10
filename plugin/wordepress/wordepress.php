@@ -59,7 +59,23 @@ add_action( 'rest_api_init', function () {
 
 add_action( 'rest_api_init', function () {
     register_rest_field( 'tutorials',
+        'wpcf-product',
+        array(
+            'get_callback'    => 'wordepress_get_meta',
+            'update_callback' => 'wordepress_update_meta',
+            'schema'          => null,
+        )
+    );
+    register_rest_field( 'tutorials',
         'wpcf-name',
+        array(
+            'get_callback'    => 'wordepress_get_meta',
+            'update_callback' => 'wordepress_update_meta',
+            'schema'          => null,
+        )
+    );
+    register_rest_field( 'tutorials',
+        'wpcf-tag',
         array(
             'get_callback'    => 'wordepress_get_meta',
             'update_callback' => 'wordepress_update_meta',
