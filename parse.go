@@ -2,8 +2,10 @@ package wordepress
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	stdpath "path"
@@ -11,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 )
 
 var AttributeRegexp = regexp.MustCompile(`^([[:word:]]+):[[:space:]]*(.+?)[[:space:]]*$`)
@@ -46,6 +49,89 @@ func parseReader(reader io.Reader) (map[string]string, []byte, error) {
 	return attributes, body, nil
 }
 
+const (
+	templateStage1 = iota
+	templateStage2
+)
+
+func parseTemplate(stage int, body []byte, sourceFileDir string) ([]byte, error) {
+	var (
+		data   interface{}
+		right  string
+		left   string
+		output bytes.Buffer
+	)
+
+	defaultTagAttributes := map[string][]string{
+		"details": {
+			"style='margin-left: 1em; border-left: 1px solid gray; padding-left: 1em;'",
+		},
+	}
+
+	openTagFunc := func(tag string, attributes ...string) string {
+		if len(attributes) > 0 {
+			return fmt.Sprintf("<%s %s>", tag, strings.Join(attributes, " "))
+		}
+
+		if v, ok := defaultTagAttributes[tag]; ok {
+			return fmt.Sprintf("<%s %s>", tag, strings.Join(v, " "))
+		}
+
+		return fmt.Sprintf("<%s>", tag)
+	}
+
+	closeTagFunc := func(tag string) string {
+		return fmt.Sprintf("</%s>", tag)
+	}
+
+	funcMap := template.FuncMap{
+		"open_tag":  openTagFunc,
+		"close_tag": closeTagFunc,
+		"build_info": func() string {
+			return os.Getenv("WORDEPRESS_CI_INFO")
+		},
+		"include": func(filePath string) (string, error) {
+			content, err := ioutil.ReadFile(stdpath.Join(sourceFileDir, filePath))
+			if err != nil {
+				return "", err
+			}
+
+			return string(content), nil
+		},
+	}
+
+	for _, t := range []string{"div", "details"} {
+		func(t string) {
+			funcMap["open_"+t] = func(attributes ...string) string { return openTagFunc(t, attributes...) }
+			funcMap["close_"+t] = func() string { return closeTagFunc(t) }
+		}(t)
+	}
+
+	switch stage {
+	case templateStage1:
+		right, left = "{{", "}}"
+	case templateStage2:
+		right, left = "[[", "]]"
+	}
+
+	data = nil
+
+	t, err := template.New(fmt.Sprintf("stage%d", stage)).
+		Delims(right, left).
+		Funcs(funcMap).
+		Parse(string(body))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.Execute(&output, data); err != nil {
+		return nil, err
+	}
+
+	return output.Bytes(), nil
+}
+
 func validateAttributes(attributes map[string]string) (string, int, error) {
 	title := attributes["title"]
 	if title == "" {
@@ -73,6 +159,8 @@ func parseFile(product, version, tag, path string, parent *CustomPost) (*CustomP
 	}
 	defer file.Close()
 
+	dir := stdpath.Dir(path)
+
 	attributes, markdown, err := parseReader(file)
 	if err != nil {
 		return nil, nil, err
@@ -83,7 +171,23 @@ func parseFile(product, version, tag, path string, parent *CustomPost) (*CustomP
 		return nil, nil, err
 	}
 
-	content, images, err := rewrite(product, version, tag, stdpath.Dir(path), markdown)
+	// includes and other macros can be done at pre-process stage, after that we render markdown
+	// pre-processing stage uses standard `{{ ... }}` template expression delimiters
+	// and the post-processing stage uses `[[ ... ]]` delimiters
+	// backslash-escaped backtick quotes must be used inside post-processing macors, otherwise
+	// the markdown library turns double qoutes into `&quot;` and makes template parser unhappy
+	preProcessed, err := parseTemplate(templateStage1, markdown, dir)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	content, images, err := rewrite(product, version, tag, dir, preProcessed)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// and after we have rendered some html, we re-execute the template processor
+	postProcessed, err := parseTemplate(templateStage2, content, dir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -103,7 +207,7 @@ func parseFile(product, version, tag, path string, parent *CustomPost) (*CustomP
 		Name:        base,
 		Tag:         tag,
 		Slug:        slug,
-		Content:     Text{Raw: string(content)},
+		Content:     Text{Raw: string(postProcessed)},
 		Status:      "publish"}, images, nil
 }
 
