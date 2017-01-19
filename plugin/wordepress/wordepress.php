@@ -19,8 +19,8 @@ function wordepress_init_post_type( $post_type_name ) {
 // Register the `document` post type with the REST API
 add_action( 'init', function () { wordepress_init_post_type ( 'documentation' ); }, 100);
 
-// Register the `tutorials-post-type` post type with the REST API
-add_action( 'init', function() { wordepress_init_post_type ( 'tutorials-post-type' ); }, 100);
+// Register the `tutorials` post type with the REST API
+add_action( 'init', function() { wordepress_init_post_type ( 'tutorials' ); }, 100);
 
 add_action( 'rest_api_init', function () {
     register_rest_field( 'documentation',
@@ -58,7 +58,7 @@ add_action( 'rest_api_init', function () {
 });
 
 add_action( 'rest_api_init', function () {
-    register_rest_field( 'tutorials-post-type',
+    register_rest_field( 'tutorials',
         'wpcf-product',
         array(
             'get_callback'    => 'wordepress_get_meta',
@@ -66,7 +66,7 @@ add_action( 'rest_api_init', function () {
             'schema'          => null,
         )
     );
-    register_rest_field( 'tutorials-post-type',
+    register_rest_field( 'tutorials',
         'wpcf-name',
         array(
             'get_callback'    => 'wordepress_get_meta',
@@ -74,7 +74,7 @@ add_action( 'rest_api_init', function () {
             'schema'          => null,
         )
     );
-    register_rest_field( 'tutorials-post-type',
+    register_rest_field( 'tutorials',
         'wpcf-tag',
         array(
             'get_callback'    => 'wordepress_get_meta',
@@ -123,13 +123,13 @@ register_activation_hook( __FILE__, function () {
 
     add_rewrite_rule(
         'tutorials/([^/]+)/([^/]+)/([^/]+)',
-        'index.php?post_type=tutorials-post-type&pagename= tutorials-$matches[1]-$matches[2]/tutorials-$matches[1]-$matches[3]',
+        'index.php?post_type=tutorials&pagename= tutorials-$matches[1]-$matches[2]/tutorials-$matches[1]-$matches[3]',
         'top'
     );
 
     add_rewrite_rule(
         'tutorials/([^/]+)/([^/]+)',
-        'index.php?post_type=tutorials-post-type&pagename= tutorials-$matches[1]-$matches[2]',
+        'index.php?post_type=tutorials&pagename= tutorials-$matches[1]-$matches[2]',
         'top'
     );
 
