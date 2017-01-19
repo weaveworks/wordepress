@@ -2,7 +2,7 @@
 /*
 Plugin Name: Weaveworks Wordepress
 Description: Host technical documentation in WordPress
-Version: 1.0.1
+Version: 1.1.0
 Author: Adam Harrison
 */
 
@@ -66,7 +66,22 @@ function wordepress_update_meta( $value, $object, $field_name ) {
     return update_post_meta( $object->ID, $field_name, strip_tags( $value ) );
 }
 
-add_filter( 'rest_query_vars', function ( $valid_vars ) {
+add_filter( 'theme_documentation_templates', function ( $post_templates ) {
+
+    // When we POST a new document via wordepress, we do not specify a value
+    // for the 'template' parameter so it assumes its default value of
+    // 'single.php'. The REST API has changed in WordPress 4.7 so that this
+    // field is revalidated on a PUT request even though we're not modifying
+    // it; unfortunately the code that introspects the theme directories to
+    // determine the valid set of templates does not work with our template
+    // files, and so this validation fails. Work around this by installing a
+    // filter that forcibly adds 'single.php' to the list of valid templates
+    // for the documentation CPT.
+
+    return array('single.php' => 'single.php');
+});
+
+add_filter( 'query_vars', function ( $valid_vars ) {
     $valid_vars = array_merge( $valid_vars, array( 'meta_query' ) );
     return $valid_vars;
 });

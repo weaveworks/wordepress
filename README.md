@@ -51,7 +51,7 @@ WordPress installation, before the first set of documents is uploaded.
 The following third-party plugins must be installed and activated:
 
 * Toolset Types, Views & Layouts
-* WordPress REST API (Version 2)
+* [WP REST API filter parameter](https://github.com/WP-API/rest-filter)
 * Application Passwords
 
 Then the Wordepress plugin must be installed and activated. The
