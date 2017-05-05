@@ -59,6 +59,13 @@ func validateAttributes(attributes map[string]string) (string, int, error) {
 	}
 	delete(attributes, "menu_order")
 
+	if searchType, found := attributes["search_type"]; found {
+		if searchType == "" {
+			return "", 0, fmt.Errorf("empty search_type attribute")
+		}
+		delete(attributes, "search_type")
+	}
+
 	if len(attributes) > 0 {
 		return "", 0, fmt.Errorf("unknown attributes: %v", attributes)
 	}
